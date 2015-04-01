@@ -15,5 +15,15 @@
   "undef": true,
   "unused": true,
   "strict": true,
-  "jquery": true
+  "jquery": true,
+  "globals": {
+    "THREE": false,
+    "TweenMax": false,
+    "_": false,
+    "$": false,
+    "Sine": false,
+    "Back": false,
+    "dat": false,
+    "THREEx": false
+  }
 }
