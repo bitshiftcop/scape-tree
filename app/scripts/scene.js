@@ -19,7 +19,7 @@ function Scene() {
   this._usedTreePositions = [];
 
   this.terrain = null;
-  this.tree = null;
+  this.treeBlueprints = [];
   this.trees = [];
   this._initialLeftTrees = [];
 
@@ -57,9 +57,7 @@ Scene.prototype = {
       hemiLight,
       dirLight,
       terrainUrls = ['obj/landscape/landscape_0001.obj', 'obj/landscape/landscape_0001.mtl'],
-      treeUrls = ['obj/tree/tree_0001.obj', 'obj/tree/tree_0001.mtl'],
       terrainLoader,
-      treeLoader,
       gui;
 
 
@@ -114,16 +112,17 @@ Scene.prototype = {
     }.bind( this ));
 
 
-    // load tree
-    treeLoader = new THREEx.UniversalLoader();
-    treeLoader.load(treeUrls, function ( obj ) {
+    // load tree blueprints
+    this.loadTreeBlueprint('pinetree', function( obj ){
+      this.treeBlueprints.push( obj );
+    }.bind( this ));
 
-      // set object to cast shadow
-      this.tree = obj;
-      this.tree.traverse(function( child ){
-        child.castShadow = true;
-      });
+    this.loadTreeBlueprint('boptree', function( obj ) {
+      this.treeBlueprints.push( obj );
+    }.bind( this ));
 
+    this.loadTreeBlueprint('longtree', function( obj ) {
+      this.treeBlueprints.push( obj );
     }.bind( this ));
 
 
@@ -155,6 +154,31 @@ Scene.prototype = {
       dropTrees:function(){
         this.dropTrees(_.random(3, 10));
       }.bind( this )}, 'dropTrees');
+  },
+
+
+  // load a tree blueprint, configure it and return it when ready
+  loadTreeBlueprint: function( type, callback ) {
+
+    var path = 'obj/trees/' + type + '/' + type,
+      urls = [path + '.obj', path + '.mtl'],
+      loader;
+
+    // load tree
+    loader = new THREEx.UniversalLoader();
+    loader.load(urls, function ( obj ) {
+
+      // set object to cast shadow
+      obj.traverse(function( child ){
+        child.castShadow = true;
+      });
+
+      // callback
+      if( callback ){
+        callback( obj );
+      }
+
+    });
   },
 
 
@@ -320,11 +344,14 @@ Scene.prototype = {
   },
 
   _createTree: function() {
-    var clonedTree = this.tree.clone();
-    clonedTree.scale.x = clonedTree.scale.y = clonedTree.scale.z = 0.5 + ( Math.random() / 2 );
-    clonedTree.rotation.y = Math.random();
+    var treeBlueprint = _.sample( this.treeBlueprints ),
+      tree = treeBlueprint.clone();
 
-    return clonedTree;
+    // random scale & rotation
+    tree.scale.x = tree.scale.y = tree.scale.z = 0.5 + ( Math.random() / 2 );
+    tree.rotation.y = Math.random();
+
+    return tree;
   },
 
   animate: function() {

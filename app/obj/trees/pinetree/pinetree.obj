@@ -1,13 +1,13 @@
 #  ==========================================================================
-#  
+#
 #  Wavefront OBJ format exported by Red-i Productions' "Riptide Pro"
 #     (a commercial plugin for Cinema 4D PC & Mac, R9.6 or later)
-#  
+#
 #  Red-i Productions
 #  http://skinprops.com
-#  
+#
 #  ==========================================================================
-mtllib tree_0001.mtl
+mtllib pinetree.mtl
 v -0.989959 50.9543 0.270851
 v -0.989959 0.954276 0.270851
 v -0.989959 50.9543 -3.97915
