@@ -1,27 +1,23 @@
 'use strict';
 
 function Scene() {
+
+  // consts
   this.CAMERA_Y_OFFSET = 250;
   this.FOG_COLOR = 0x3a87b2;
-  this.TREE_X_SPACE = 100;
-  this.TREE_Z_SPACE = 100;
-  this.TREES_PER_ROW = 15;
 
+  // scene assets
   this.scene = null;
   this.camera = null;
   this.renderer = null;
 
+  // mouse stuff
   this._mouse = new THREE.Vector2();
-  this._mouseX = 0;
-  this._mouseY = 0;
 
-
-  this._usedTreePositions = [];
-
+  // models
   this.terrain = null;
   this.treeBlueprints = [];
   this.trees = [];
-  this._initialLeftTrees = [];
 
   // at the right of the river
   var rightDropZone = new THREE.Box2();
@@ -37,22 +33,20 @@ function Scene() {
     new THREE.Vector2(500, 800)
   );
 
+  // dropzones, zones where tree are allowed to drop
   this.dropZones = [
     rightDropZone,
     leftDropZone
   ];
 
-
-
-  this._randomLeftPositions = [118, 103, 104, 102, 87];
-
-  this.initScene();
+  // create scene, start cycle
+  this.createScene();
   this.animate();
 }
 
 
 Scene.prototype = {
-  initScene: function() {
+  createScene: function() {
     var d = 1000,
       hemiLight,
       dirLight,
@@ -154,6 +148,11 @@ Scene.prototype = {
       dropTrees:function(){
         this.dropTrees(_.random(3, 10));
       }.bind( this )}, 'dropTrees');
+
+    gui.add({
+      eraseTrees:function(){
+        this.eraseTrees(_.random(3, 10));
+      }.bind( this )}, 'eraseTrees');
   },
 
 
@@ -179,6 +178,19 @@ Scene.prototype = {
       }
 
     });
+  },
+
+
+  // create a random tree starting from one of the blueprints
+  createTree: function() {
+    var treeBlueprint = _.sample( this.treeBlueprints ),
+      tree = treeBlueprint.clone();
+
+    // random scale & rotation
+    tree.scale.x = tree.scale.y = tree.scale.z = 0.5 + ( Math.random() / 2 );
+    tree.rotation.y = Math.random();
+
+    return tree;
   },
 
 
@@ -213,153 +225,76 @@ Scene.prototype = {
       );
 
       // create tree
-      tree = this._createTree();
+      tree = this.createTree();
       tree.position.set(treeCenter.x, 500, treeCenter.y);
 
       // animate in
       TweenMax.to(tree.position, 0.25 + (Math.random() * 0.25), {
-        delay:Math.random() * 0.25,
-        y:-80,
+        delay: Math.random() * 0.25,
+        y: -80,
         ease:Sine.easeIn
       });
 
       this.scene.add( tree );
+      this.trees.push( tree );
+    }
+  },
+
+
+  // animate out and erase some trees
+  eraseTrees: function( amount ) {
+    if( !this.trees.length ) {
+      return;
     }
 
+    var i = 0,
+      availableAmount,
+      tree;
 
+    // clamp to minimum amount we have
+    availableAmount = Math.min( this.trees.length, amount );
+
+    // loop over the amount of trees to remove
+    for( ; i < availableAmount ; i++ ) {
+
+      // get random tree and remove it from our array
+      tree = _.sample( this.trees );
+      tree = _.first(this.trees.splice( this.trees.indexOf( tree ), 1 ));
+
+      // animate it out
+      TweenMax.to(tree.position, 0.35 + (Math.random() * 0.35), {
+        delay: Math.random() * 0.25,
+        y: 500,
+        ease: Back.easeIn,
+        onCompleteParams:[tree],
+        onComplete: function( obj ){
+
+          // delete it from the scene
+          this.scene.remove( obj );
+        }.bind( this )
+      });
+
+    }
   },
+
 
   mousemove: function( event ) {
     this._mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
     this._mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
   },
 
-  addRightObjects: function( amount ) {
-    for(var i = 0 ; i < amount ; i++) {
-      this.addAdditionalRightObject(i);
-    }
-  },
 
-  addLeftObjects: function( amount ) {
-    for(var i = 0 ; i < amount ; i++) {
-      var treePosition = -1;
-
-      do {
-        treePosition = parseInt(Math.random() * 100, 10);
-      }
-      while(this._usedTreePositions.indexOf(treePosition) !== -1 && this._usedTreePositions.length);
-
-      var addedTree = this.addAdditionalLeftObject(treePosition);
-      this._initialLeftTrees.push(addedTree);
-    }
-  },
-
-  addAdditionalLeftObjects: function( count ) {
-    for(var i = 0 ; i < count ; i++) {
-      var triedLeftAmount = 0;
-
-      // Find next free slot
-      var treePosition = this._randomLeftPositions[0];
-      while(this._usedTreePositions.indexOf(treePosition) !== -1) {
-        if(triedLeftAmount < this._randomLeftPositions.length) {
-          treePosition = this._randomLeftPositions[triedLeftAmount];
-          triedLeftAmount += 1;
-        } else if(triedLeftAmount === this._randomLeftPositions.length + 1) {
-          triedLeftAmount += 1;
-          treePosition = 118;
-        } else {
-          treePosition -= 1;
-        }
-      }
-
-      // Add object
-      this.addAdditionalLeftObject(treePosition);
-    }
-  },
-
-  addAdditionalRightObject: function( position ) {
-
-    var zpos = -1500,
-      xpos = 1100,
-      row,
-      col,
-      tree;
-
-    // calculate row and column
-    row = Math.floor(position / this.TREES_PER_ROW);
-    col = (position % this.TREES_PER_ROW);
-
-    // create tree
-    tree = this._createTree();
-    tree.position.x = xpos - (row * this.TREE_X_SPACE) + ((Math.random() * 40) - 20);
-    tree.position.y = 500.0;
-    tree.position.z = zpos + (col * this.TREE_Z_SPACE) + ((Math.random() * 40) - 20);
-
-    // animate in
-    TweenMax.to(tree.position, 0.25 + (Math.random() * 0.25), {
-      delay:Math.random() * 0.25,
-      y:-80,
-      ease:Sine.easeIn
-    });
-
-    // add to scene
-    this.scene.add(tree);
-    this.trees.push(tree);
-
-    return tree;
-  },
-
-  addAdditionalLeftObject: function( position ) {
-    // Push new position in array
-    this._usedTreePositions.push(position);
-
-    // Offsets
-    var zpos = -1500;
-    var xpos = -800;
-
-    // Calculate row and column
-    var row = Math.floor(position / this.TREES_PER_ROW);
-    var col = (position % this.TREES_PER_ROW);
-
-    // Make tree at that col/row
-    var tree = this._createTree();
-    tree.position.x = xpos + (row * this.TREE_X_SPACE) + ((Math.random() * 40) - 20);
-    tree.position.y = 500.0;
-    tree.position.z = zpos + (col * this.TREE_Z_SPACE) + ((Math.random() * 40) - 20);
-
-    // Animate in
-    TweenMax.to(tree.position, 0.25 + (Math.random() * 0.25), {delay:Math.random() * 0.25, y:-80, ease:Sine.easeIn});
-
-    // Add to graphs
-    this.scene.add(tree);
-
-    return tree;
-  },
-
-  moveTree: function() {
-    var randomTree = this._initialLeftTrees[Math.round(Math.random() * (this._initialLeftTrees.length - 1))];
-    TweenMax.to(randomTree.position, 0.75, {y:500, ease:Back.easeIn, onComplete:function(){
-      this.addAdditionalRightObject(this.trees.length);
-    }.bind( this ) });
-  },
-
-  _createTree: function() {
-    var treeBlueprint = _.sample( this.treeBlueprints ),
-      tree = treeBlueprint.clone();
-
-    // random scale & rotation
-    tree.scale.x = tree.scale.y = tree.scale.z = 0.5 + ( Math.random() / 2 );
-    tree.rotation.y = Math.random();
-
-    return tree;
-  },
-
+  // animate cycle
   animate: function() {
-    requestAnimationFrame(this.animate.bind(this));
+    requestAnimationFrame(
+      this.animate.bind( this )
+    );
 
     this.render();
   },
 
+
+  // render cycle
   render: function() {
     /*
     this.camera.position.x += ((this._mouse.x * 200) - this.camera.position.x) * 0.025;
@@ -374,6 +309,4 @@ Scene.prototype = {
 
     this.renderer.render(this.scene, this.camera);
   }
-
-
 };
