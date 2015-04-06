@@ -157,15 +157,6 @@ Scene.prototype = {
     // create gui
     gui = new dat.GUI();
 
-    gui.add( this.camera.position, 'x', -500, 2000 ).step( 20 );
-    gui.add( this.camera.position, 'y', -500, 2000 ).step( 20 );
-    gui.add( this.camera.position, 'z', -2000, 4000 ).step( 20 );
-    gui.add( this.camera.rotation, 'x', -1, 1 );
-
-    gui.add( this.camera, 'fov', 10, 110 ).step( 1 ).onChange(function(){
-      this.camera.updateProjectionMatrix();
-    }.bind( this ));
-
     gui.add({
       dropTrees:function(){
         this.dropTrees(_.random(10, 30));
@@ -365,17 +356,19 @@ Scene.prototype = {
 
   // render cycle
   render: function() {
-    /*
-    this.camera.position.x += ((this.mouse.x * 200) - this.camera.position.x) * 0.025;
-    this.camera.position.y = this.CAMERA_Y_OFFSET;
 
+    // move camera left/right on mouse movement
+    this.camera.position.x += ((this.mouse.x * 200) - this.camera.position.x) * 0.025;
+
+    // look at terrain
     if(this.terrain) {
       var terrainAxisVector = this.terrain.position.clone();
       terrainAxisVector.setZ(-775);
       this.camera.lookAt(terrainAxisVector);
     }
-    */
 
+    // update matrix for further object picking
+    this.camera.updateMatrixWorld();
 
 
     // config raycaster
