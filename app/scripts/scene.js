@@ -8,6 +8,7 @@ function Scene() {
   // scene assets
   this.scene = null;
   this.renderer = null;
+  this.raycaster = null;
 
   // camera
   this.camera = null;
@@ -26,12 +27,14 @@ function Scene() {
   };
 
   // mouse stuff
-  this._mouse = new THREE.Vector2();
+  this.mouse = new THREE.Vector2();
 
   // models
   this.terrain = null;
   this.treeBlueprints = [];
   this.trees = [];
+
+  this.INTERSECTED = null;
 
   // at the right of the river
   var rightDropZone = new THREE.Box2();
@@ -138,8 +141,6 @@ Scene.prototype = {
     this.renderer.setSize( window.innerWidth, window.innerHeight );
     this.renderer.shadowMapEnabled = true;
 
-
-    // append renderer dom to overall
     document
       .getElementById( 'scene' )
       .appendChild( this.renderer.domElement );
@@ -147,6 +148,10 @@ Scene.prototype = {
 
     // init resizer
     new THREEx.WindowResize(this.renderer, this.camera);
+
+
+    // raycaster
+    this.raycaster = new THREE.Raycaster();
 
 
     // create gui
@@ -205,8 +210,16 @@ Scene.prototype = {
 
   // create a random tree starting from one of the blueprints
   createTree: function() {
-    var treeBlueprint = _.sample( this.treeBlueprints ),
+    var i = 0,
+      treeBlueprint = _.sample( this.treeBlueprints ),
       tree = treeBlueprint.clone();
+
+    treeBlueprint.traverse(function( child ){
+      if(child instanceof THREE.Mesh) {
+        tree.children[i].material = child.material.clone();
+        i++;
+      }
+    });
 
     // random scale & rotation
     tree.scale.x = tree.scale.y = tree.scale.z = 0.5 + ( Math.random() / 2 );
@@ -333,8 +346,10 @@ Scene.prototype = {
 
 
   mousemove: function( event ) {
-    this._mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
-    this._mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+    event.preventDefault();
+
+    this.mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+    this.mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
   },
 
 
@@ -351,7 +366,7 @@ Scene.prototype = {
   // render cycle
   render: function() {
     /*
-    this.camera.position.x += ((this._mouse.x * 200) - this.camera.position.x) * 0.025;
+    this.camera.position.x += ((this.mouse.x * 200) - this.camera.position.x) * 0.025;
     this.camera.position.y = this.CAMERA_Y_OFFSET;
 
     if(this.terrain) {
@@ -360,6 +375,30 @@ Scene.prototype = {
       this.camera.lookAt(terrainAxisVector);
     }
     */
+
+
+
+    // config raycaster
+    this.raycaster.setFromCamera( this.mouse, this.camera );
+
+    // get intersecting trees, give them a light emissive color
+    var intersects = this.raycaster.intersectObjects( this.trees, true );
+    if ( intersects.length > 0 ) {
+      if ( this.intersectingObjects !== intersects[ 0 ].object ) {
+        if ( this.intersectingObjects ) {
+          this.intersectingObjects.material.emissive.setHex( this.intersectingObjects.currentHex );
+        }
+
+        this.intersectingObjects = intersects[ 0 ].object;
+        this.intersectingObjects.currentHex = this.intersectingObjects.material.emissive.getHex();
+        this.intersectingObjects.material.emissive.setHex( 0x649859 );
+      }
+    } else {
+      if ( this.intersectingObjects ) {
+        this.intersectingObjects.material.emissive.setHex( this.intersectingObjects.currentHex );
+      }
+      this.intersectingObjects = null;
+    }
 
     this.renderer.render(this.scene, this.camera);
   }
