@@ -3,13 +3,27 @@
 function Scene() {
 
   // consts
-  this.CAMERA_Y_OFFSET = 250;
   this.FOG_COLOR = 0x3a87b2;
 
   // scene assets
   this.scene = null;
-  this.camera = null;
   this.renderer = null;
+
+  // camera
+  this.camera = null;
+  this.activeCameraSetting = null;
+  this.cameraSettings = {
+    god: {
+      fov: 45,
+      position: new THREE.Vector3(0, 640, 740),
+      rotation: new THREE.Vector3(-0.6, 0, 0)
+    },
+    person: {
+      fov: 75,
+      position: new THREE.Vector3(-120, -30, -120),
+      rotation: new THREE.Vector3(0, 0, 0)
+    }
+  };
 
   // mouse stuff
   this._mouse = new THREE.Vector2();
@@ -22,15 +36,15 @@ function Scene() {
   // at the right of the river
   var rightDropZone = new THREE.Box2();
   rightDropZone.setFromCenterAndSize(
-    new THREE.Vector2(295, -1100),
-    new THREE.Vector2(500, 800)
+    new THREE.Vector2(595, -2650),      // center
+    new THREE.Vector2(1000, 2000)         // size
   );
 
   // at the left of the river
   var leftDropZone = new THREE.Box2();
   leftDropZone.setFromCenterAndSize(
-    new THREE.Vector2(-275, -1100),
-    new THREE.Vector2(500, 800)
+    new THREE.Vector2(-575, -2650),
+    new THREE.Vector2(1000, 2000)
   );
 
   // dropzones, zones where tree are allowed to drop
@@ -55,10 +69,8 @@ Scene.prototype = {
       gui;
 
 
-    // create camera
-    this.camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 10000 );
-    this.camera.position.set( 0, this.CAMERA_Y_OFFSET, 600 );
-    this.camera.rotation.set( -0.3, 0, 0 );
+    // set camera settings
+    this.setCameraSettings(this.cameraSettings.god);
 
 
     // create scene
@@ -133,26 +145,36 @@ Scene.prototype = {
       .appendChild( this.renderer.domElement );
 
 
+    // init resizer
+    new THREEx.WindowResize(this.renderer, this.camera);
+
+
     // create gui
     gui = new dat.GUI();
-    gui.add( this.camera.position, 'x', -500, 500 ).step( 5 );
-    gui.add( this.camera.position, 'y', -500, 500 ).step( 5 );
-    gui.add( this.camera.position, 'z', -2000, 2000 ).step( 5 );
+
+    gui.add( this.camera.position, 'x', -500, 2000 ).step( 20 );
+    gui.add( this.camera.position, 'y', -500, 2000 ).step( 20 );
+    gui.add( this.camera.position, 'z', -2000, 4000 ).step( 20 );
     gui.add( this.camera.rotation, 'x', -1, 1 );
 
-    gui.add( this.camera, 'fov', 20, 80 ).step( 1 ).onChange(function(){
+    gui.add( this.camera, 'fov', 10, 110 ).step( 1 ).onChange(function(){
       this.camera.updateProjectionMatrix();
     }.bind( this ));
 
     gui.add({
       dropTrees:function(){
-        this.dropTrees(_.random(3, 10));
+        this.dropTrees(_.random(10, 30));
       }.bind( this )}, 'dropTrees');
 
     gui.add({
       eraseTrees:function(){
         this.eraseTrees(_.random(3, 10));
       }.bind( this )}, 'eraseTrees');
+
+    gui.add({
+      toggleCamera:function(){
+        this.setCameraSettings(this.activeCameraSetting === this.cameraSettings.god ? this.cameraSettings.person : this.cameraSettings.god );
+      }.bind( this )}, 'toggleCamera');
   },
 
 
@@ -198,7 +220,7 @@ Scene.prototype = {
   dropTrees: function( amount ) {
 
     var i = 0,
-      distanceFromGroupCenter = 100,
+      distanceFromGroupCenter = 300,
       randomDropZone,
       zoneWidth, zoneHeight,
       groupCenter,
@@ -275,6 +297,38 @@ Scene.prototype = {
       });
 
     }
+  },
+
+
+  setCameraSettings: function ( cameraSettings ) {
+
+    // create camera if not exists
+    if(!this.camera) {
+      this.camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 7500 );
+    }
+
+    // field of view
+    this.camera.fov = cameraSettings.fov;
+
+    // position
+    this.camera.position.set(
+      cameraSettings.position.x,
+      cameraSettings.position.y,
+      cameraSettings.position.z
+    );
+
+    // rotation
+    this.camera.rotation.set(
+      cameraSettings.rotation.x,
+      cameraSettings.rotation.y,
+      cameraSettings.rotation.z
+    );
+
+    // update projection matric to apply prop changes
+    this.camera.updateProjectionMatrix();
+
+    // remember setting
+    this.activeCameraSetting = cameraSettings;
   },
 
 

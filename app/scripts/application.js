@@ -1,6 +1,13 @@
 'use strict';
 
-function Application() {
+function Application( options ) {
+  this.defaults = {
+    enableVoice: true
+  };
+
+  this.settings = _.extend(this.defaults, options);
+  console.log(this.settings);
+
   $(document).ready( this.init.bind( this ) );
 }
 
@@ -17,14 +24,8 @@ Application.prototype = {
     }.bind( this ) );
 
 
-    // add resize listener
-    $(window).resize( function() {
-      //this.scene.resize();
-    }.bind( this ) );
-
-
     // listen to what the user has to say
-    if (annyang) {
+    if (this.settings.enableVoice && annyang) {
       var commands = {
         'drop tree': function() {
           console.log('drop tree');

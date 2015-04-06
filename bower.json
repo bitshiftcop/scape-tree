@@ -10,7 +10,8 @@
     "dat-gui": "~0.5.1",
     "gsap": "~1.16.1",
     "threex.universalloader": "*",
-    "annyang": "~1.6.0"
+    "annyang": "~1.6.0",
+    "threex.windowresize": "*"
   },
   "overrides": {
     "dat-gui": {
