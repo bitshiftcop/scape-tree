@@ -5,13 +5,13 @@
     "jquery": "~2.1.1",
     "modernizr": "~2.8.1",
     "underscore": "~1.8.2",
-    "threejs": "*",
     "stats.js": "*",
     "dat-gui": "~0.5.1",
     "gsap": "~1.16.1",
     "threex.universalloader": "*",
     "annyang": "~1.6.0",
-    "threex.windowresize": "*"
+    "threex.windowresize": "*",
+    "three.js": "threejs#r70"
   },
   "overrides": {
     "dat-gui": {
